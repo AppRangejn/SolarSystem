@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio < 2 ? window.devicePixelRatio : 2);
+    document.body.appendChild(renderer.domElement);
+
+    const loader = new THREE.TextureLoader();
+    loader.load('https://th.bing.com/th/id/R.bca4edc273d006a100c693f6554f9fc8?rik=3Q%2bc3jZT%2bubvCA&pid=ImgRaw&r=0', (texture) => {
+        scene.background = texture;
+    });
+
+    const textures = {
+        mercury: loader.load('https://vignette.wikia.nocookie.net/planet-texture-maps/images/f/ff/Mercury\'s_Hot_Side.png/revision/latest/scale-to-width-down/2000?cb=20190329120631'),
+        venus: loader.load('https://th.bing.com/th/id/R.f3fc899218b29c879af0976bbd78bd25?rik=zbOb9m%2bAorIVmg&pid=ImgRaw&r=0'),
+        earth: loader.load('https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/e6059863-37fa-4986-9b43-0a116285360b/d4p5ydm-dc546360-e314-4eb3-876a-b216bbf509ea.png/v1/fill/w_1264,h_632,q_70,strp/earth___texture_by_peteridish_d4p5ydm-pre.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTI4MiIsInBhdGgiOiJcL2ZcL2U2MDU5ODYzLTM3ZmEtNDk4Ni05YjQzLTBhMTE2Mjg1MzYwYlwvZDRwNXlkbS1kYzU0NjM2MC1lMzE0LTRlYjMtODc2YS1iMjE2YmJmNTA5ZWEucG5nIiwid2lkdGgiOiI8PTI1NjQifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.AlDvOrse-9JdVuaGnd7Tw1vvhjoXVTtvzHE6olxpQF8'),
+        mars: loader.load('https://as2.ftcdn.net/v2/jpg/03/38/48/79/1000_F_338487951_noDUtHlzxljulqg525A9YZAup9IEpeNS.jpg'),
+        jupiter: loader.load('https://th.bing.com/th/id/R.b7be91564eb4e5303c47bed1aa27d9ce?rik=ec9KYIdo21Wv8A&pid=ImgRaw&r=0'),
+        saturn: loader.load('https://th.bing.com/th/id/OIP.A47Dz0MvGprV-HZoDT3jOAHaDt?rs=1&pid=ImgDetMain'),
+        uranus: loader.load('https://th.bing.com/th/id/OIP.o00l5_5exZrGTG86SYJFsgHaEK?rs=1&pid=ImgDetMain'),
+        neptune: loader.load('https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/9ca15be5-bdef-4bda-8172-2eac787b4d57/df3w9u3-8d7ac0f7-4b06-4151-a01c-90b9ac41ad39.png/v1/fill/w_1280,h_640,q_80,strp/neptune_texture_map___custom_by_adamirman2810_df3w9u3-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9NjQwIiwicGF0aCI6IlwvZlwvOWNhMTViZTUtYmRlZi00YmRhLTgxNzItMmVhYzc4N2I0ZDU3XC9kZjN3OXUzLThkN2FjMGY3LTRiMDYtNDE1MS1hMDFjLTkwYjlhYzQxYWQzOS5wbmciLCJ3aWR0aCI6Ijw9MTI4MCJ9XV0sImF1ZCI6WyJ1cm46c2VydmljZTppbWFnZS5vcGVyYXRpb25zIl19.E5P1JjydNLUi89sbdW8uu_gG-GL0AWFvFRtiJQr7RxQ')
+    };
+
+    const sunTexture = loader.load('https://1.bp.blogspot.com/-ysB6ECK8cg0/XwXfSyZ0aFI/AAAAAAAAAHE/irVQWGUMi80XJPXqRizrBfhiZ2uPVuzWACK4BGAsYHg/s2048/sol-textura.jpg');
+    const sunGeometry = new THREE.SphereGeometry(20, 32, 32);
+    const sunMaterial = new THREE.MeshStandardMaterial({ map: sunTexture });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    scene.add(sun);
+
+    function createPlanet(size, texture, distance) {
+        const geometry = new THREE.SphereGeometry(size, 32, 32);
+        const material = new THREE.MeshStandardMaterial({ map: texture });
+        const planet = new THREE.Mesh(geometry, material);
+        planet.position.x = distance;
+        scene.add(planet);
+        return planet;
+    }
+
+    const planets = [
+        createPlanet(3, textures.mercury, 10),
+        createPlanet(6, textures.venus, 15),
+        createPlanet(8, textures.earth, 20),
+        createPlanet(7, textures.mars, 25),
+        createPlanet(12, textures.jupiter, 35),
+        (() => {
+            const saturn = createPlanet(11, textures.saturn, 45);
+            const ringGeometry = new THREE.RingGeometry(13, 20, 64);
+            const ringMaterial = new THREE.MeshBasicMaterial({
+                color: 0xd3d3d3,
+                side: THREE.DoubleSide
+            });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.rotation.x = Math.PI / 2;
+            saturn.add(ring);
+            return saturn;
+        })(),
+        createPlanet(10, textures.uranus, 55),
+        createPlanet(9, textures.neptune, 65),
+    ];
+
+    const orbitalSpeeds = [1 / 88, 1 / 225, 1 / 365, 1 / 687, 1 / 4333, 1 / 10759, 1 / 30688, 1 / 60182];
+    const speedScale = 1000;
+
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    scene.add(ambientLight);
+
+    camera.position.z = 100;
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 20;
+    controls.maxDistance = 200;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.minPolarAngle = 0;
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        planets.forEach((planet, index) => {
+            const speed = orbitalSpeeds[index] * speedScale;
+            const distance = 25 + index * 20;
+            const angle = Date.now() * 0.0001 * speed;
+
+            planet.position.x = Math.cos(angle) * distance;
+            planet.position.z = Math.sin(angle) * distance;
+        });
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+</script>
+</body>
+</html>
